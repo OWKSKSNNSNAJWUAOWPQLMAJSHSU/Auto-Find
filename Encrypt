@@ -1,0 +1,443 @@
+for i, bot in pairs(getBots()) do
+    if getBot().name:upper() == bot.name:upper() then
+        indexbot = i
+    end
+end
+
+index = 1
+local setting = {}
+ingrejammer = {226,202,2,doorItemId}
+notingrejammer = {202,2,doorItemId}
+
+setting.split = function(str, ptr)
+    if not ptr then 
+        ptr = "%s"
+    end
+    local tbl = {}
+    for string in string.gmatch(str, ptr) do
+        table.insert(tbl, string) 
+    end
+    return tbl
+end
+
+findItem = function(id)
+    return getBot():getInventory():getItemCount(id)
+end
+
+place = function(id,ex,ye)
+    getBot():place(getBot().x+ex,getBot().y+ye,id)
+end
+
+punch = function(ex,ye)
+    getBot():hit(getBot().x+ex,getBot().y+ye)
+end
+
+move = function(x,y)
+    getBot():moveTo(x,y)
+end
+
+findPath = function(x,y)
+    getBot():findPath(x,y)
+end
+
+setting.reconnect = function(world,id,x,y)
+    if getBot():getPing() == 0 then
+        getBot():disconnect()
+        sleep(2000)
+    end
+    if not getBot():isInWorld(world:upper()) and getBot().status == BotStatus.online then 
+        print("("..getBot().name..") at another world, trying to joining world again @everyone")
+        local count = 0
+        while not getBot():isInWorld(world:upper()) do
+            getBot():sendPacket(3,"action|join_request\nname|"..world:upper().."\ninvitedWorld|0")
+            sleep(delaywarp)
+            if not getBot():isInWorld(world:upper()) then 
+                count = count + 1
+                if count > 5 then
+                    print("("..getBot().name..") Failed to joining world again, terminated script @everyone")
+                    getBot():stopScript()
+                end
+            end
+        end
+        if id ~= "" then
+            local stucks = 0
+            while getTile(getBot().x,getBot().y).fg == 6 do
+                getBot():sendPacket(3,"action|join_request\nname|" ..world:upper().."|"..id:upper().."\ninvitedWorld|0")
+                sleep(delaywarp)
+                if stucks > 3 then
+                    print("("..getBot().name..") Failed to reconnecting bot, stuck at white door. Terminated script @everyone")
+                    getBot():stopScript()
+                end
+            end
+        end
+        if x and y then
+            while getBot().x ~= x or getBot().y ~= y do
+                findPath(x,y)
+                sleep(150)
+            end
+        end
+        print("("..getBot().name..") success to joining world @everyone")
+    end
+    if getBot().status ~= BotStatus.online then
+        print("("..getBot().name..") status is offline @everyone")
+        while getBot().status ~= BotStatus.online do
+            getBot():connect()
+            sleep(delayreconnect)
+            if getBot().status == BotStatus.account_banned then
+                print("("..getBot().name..") status is suspended, removing bot @everyone")
+                getBot():stopScript()
+            end
+        end
+        local counts = 0
+        while not getBot():isInWorld(world:upper()) do
+            getBot():sendPacket(3,"action|join_request\nname|"..world:upper().."\ninvitedWorld|0")
+            sleep(delaywarp)
+            if not getBot():isInWorld(world:upper()) then 
+                counts = counts + 1
+                if counts > 5 then
+                    print("("..getBot().name..") Failed to joining world again, terminated script @everyone")
+                    getBot():stopScript()
+                end
+            end
+        end
+        if id ~= "" then
+            local stuckk = 0
+            while getTile(getBot().x,getBot().y).fg == 6 do
+                getBot():sendPacket(3,"action|join_request\nname|" ..world:upper().."|"..id:upper().."\ninvitedWorld|0")
+                sleep(delaywarp)
+                if stuckk > 3 then
+                    print("("..getBot().name..") Failed to reconnecting bot, stuck at white door. Terminated script @everyone")
+                    getBot():stopScript()
+                end
+            end
+        end
+        if x and y then
+            while getBot().x ~= x or getBot().y ~= y do
+                findPath(x,y)
+                sleep(150)
+            end
+        end
+        print("("..getBot().name..") status is online @everyone")
+    end
+end
+
+setting.warp = function(world,door,cooldown)
+    name = world
+    if door ~= "" then
+        name = name .. "|" ..door
+    end
+    if not getBot():isInWorld(world:upper()) then
+        addEvent(Event.variantlist, function(variant, netid)
+            if variant:get(0):getString() == "OnConsoleMessage" then
+                if variant:get(1):getString():lower():find("inaccessible.") then
+                    nuked = true
+                end
+                if variant:get(1):getString():lower():find("experiencing ") then
+                    subserver = true
+                end
+                if variant:get(1):getString():lower():find("created too many worlds") then
+                    cantcreate = true
+                end
+            end
+        end)
+        while not getBot():isInWorld(world:upper()) and not nuked and not subserver and not cantcreate do
+            if getBot():getPing() == 0 then
+                getBot():disconnect()
+                sleep(2000)
+            end
+            if getBot().status ~= BotStatus.online then
+                print("("..getBot().name..") status is offline @everyone")
+                while getBot().status ~= BotStatus.online do
+                    getBot():connect()
+                    sleep(delayreconnect)
+                    if getBot().status == BotStatus.account_banned then
+                        print("("..getBot().name..") status is suspended, removing bot @everyone")
+                        getBot():stopScript()
+                    end
+                end
+                print("("..getBot().name..") status is online @everyone")
+            end
+            getBot():sendPacket(3,"action|join_request\nname|"..name.."\ninvitedWorld|0")
+            listenEvents(8)
+            sleep(cooldown)
+        end
+        removeEvents()
+        sleep(2000)
+    end
+    if getBot():isInWorld(world:upper()) then
+        if door ~= "" then
+            local stuck = 0
+            while getTile(getBot().x,getBot().y).fg == 6 and not wrong do
+                if getBot():getPing() == 0 then
+                    getBot():disconnect()
+                    sleep(4000)
+                end
+                if getBot().status ~= BotStatus.online then
+                    print("("..getBot().name..") status is offline @everyone")
+                    while getBot().status ~= BotStatus.online do
+                        getBot():connect()
+                        sleep(delayreconnect)
+                        if getBot().status == BotStatus.account_banned then
+                            print("("..getBot().name..") status is suspended, removing bot @everyone")
+                            getBot():stopScript()
+                        end
+                    end
+                    print("("..getBot().name..") status is online @everyone")
+                end
+                getBot():sendPacket(3,"action|join_request\nname|"..name.."\ninvitedWorld|0")
+                sleep(cooldown)
+                stuck = stuck + 1
+                if stuck == 5 then
+                    wrong = true
+                end
+            end
+        end
+        for i, tile in pairs(getBot():getWorld():getTiles()) do
+            if tile:hasFlag(4096) then
+                fire = true
+            end
+        end
+    end
+end
+
+setting.genworld = function()
+    local paramm = ""
+    local withnum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    for i = 1,letter do
+        local randomnumber = math.random(1,#withnum)
+        local acaknomor = string.sub(withnum,randomnumber,randomnumber)
+        if not withnumber then
+            paramm = paramm..string.char(math.random(97,122))
+        else
+            paramm = paramm..acaknomor
+        end
+    end
+    setting.warp(paramm,"")
+    ::BACK:: 
+    if not subserver then
+        if not nuked then
+            if not cantcreate then
+                setting.reconnect(paramm,"")
+                while getTile(getBot().x,getBot().y).fg == 6 do
+                    move(0,-2)
+                    sleep(500)
+                end
+                setting.placeingre(paramm)
+                setting.writeFile(getBot().name,'"'..paramm..'",')
+            else
+                cantcreate = false
+                print("Your account was created too many worlds today, Terminate script !!")
+                getBot():stopScript()
+            end
+        else
+            nuked = false
+            print("World generate is NUKED!, Terminate script !!")
+            getBot():stopScript()
+        end
+    else
+        subserver = false
+        print("Bot : "..getBot().name.." system is sub-server, sleeping for 2 minutes")
+        sleep(120000)
+        setting.reconnect(paramm,"")
+        goto BACK
+    end
+end
+
+setting.takeingre = function(threads)
+    ::BACK::
+    print("["..indexbot.."]Take Ingredients")
+    world = setting.split(worldTakeAutoFind[index],"[^:]+")[1]
+    door = setting.split(worldTakeAutoFind[index],"[^:]+")[2]
+    setting.warp(world,door,delaywarp)
+    if not subserver then
+        if not nuked then
+            if not wrong then
+                if useJammer then
+                    for _, pack in pairs(ingrejammer) do
+                        for _, obj in pairs(getBot():getWorld():getObjects()) do
+                            if obj.id == pack then
+                                findPath(math.floor(obj.x / 32),math.floor(obj.y / 32))
+                                sleep(1000)
+                                getBot():collect(2)
+                                sleep(1000)
+                                setting.reconnect(world,door,math.floor(obj.x / 32),math.floor(obj.y / 32))
+                            end
+                            if findItem(pack) >  0 then
+                                break
+                            end
+                        end
+                    end
+                else
+                    for _, pack in pairs(notingrejammer) do
+                        for _, obj in pairs(getBot():getWorld():getObjects()) do
+                            if obj.id == pack then
+                                findPath(math.floor(obj.x / 32),math.floor(obj.y / 32))
+                                sleep(1000)
+                                getBot():collect(2)
+                                sleep(1000)
+                                setting.reconnect(world,door,math.floor(obj.x / 32),math.floor(obj.y / 32))
+                            end
+                            if findItem(pack) > 0 then
+                                break
+                            end
+                        end
+                    end
+                end
+            else
+                wrong = false
+                sleep(3000)
+                print("World to take jammers is wrong door id, terminated sc")
+                getBot():stopScript()
+            end
+        else
+            nuked = false
+            sleep(3000)
+            print("World to take jammers is NUKED, terminated sc")
+            getBot():stopScript()
+        end
+    else
+        subserver = false
+        sleep(3000)
+        print("Bot : "..getBot().name.." system is sub-server, sleeping for 2 minutes")
+        sleep(120000)
+        goto BACK
+    end
+    if useJammer then
+        for _, pack in pairs(ingrejammer) do
+            if findItem(pack) > 0 then
+                move(1,0)
+                sleep(1000)
+                getBot():setDirection(true)
+                sleep(1000)
+                getBot():drop(226,findItem(226) - maxFindWorld)
+                sleep(delaydrop)
+                getBot():drop(2,findItem(2) - (maxFindWorld * 2))
+                sleep(delaydrop)
+                getBot():drop(202,findItem(202) - maxFindWorld)
+                sleep(delaydrop)
+                getBot():drop(doorItemId,findItem(doorItemId) - maxFindWorld)
+                sleep(delaydrop)
+                setting.reconnect(world,door,getBot().x,getBot().y)
+                break
+            end
+        end
+    else
+        for _, pack in pairs(notingrejammer) do
+            if findItem(pack) > 0 then
+                move(1,0)
+                sleep(1000)
+                getBot():setDirection(true)
+                sleep(1000)
+                getBot():drop(202,findItem(202) - maxFindWorld)
+                sleep(delaydrop)
+                getBot():drop(2,findItem(2) - (maxFindWorld * 2))
+                sleep(delaydrop)
+                getBot():drop(doorItemId,findItem(doorItemId) - maxFindWorld)
+                sleep(delaydrop)
+                setting.reconnect(world,door,getBot().x,getBot().y)
+            end
+            break
+        end
+    end
+end
+
+setting.writeFile = function(info,text)
+    local file = io.open(""..info..".txt","a")
+    file:write(text.."\n")
+    file:close()
+end
+
+setting.editDoor = function(doorid)
+    getBot():wrench(getBot().x,getBot().y)
+    sleep(5000)
+    getBot():sendPacket(2,"action|dialog_return\ndialog_name|door_edit\ntilex|"..getBot().x.."|\ntiley|"..getBot().y.."|\ndoor_name|Caramoy\ndoor_target|Caramoy\ndoor_id|"..doorid.."\ncheckbox_locked|1")
+    sleep(5000)
+end
+
+setting.placeingre = function(info)
+    if useJammer then
+        while getTile(getBot().x+1,getBot().y + 1).fg ~= 226 do
+            place(226,1,1)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(1000)
+        if getTile(getBot().x+1,getBot().y + 1).fg == 226 then
+            punch(1,1)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x,getBot().y + 1).fg ~= 202 do
+            place(202,0,1)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x+1,getBot().y + 2).fg ~= 2 do
+            place(2,1,2)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x-1,getBot().y + 2).fg ~= 2 do
+            place(2,-1,2)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x,getBot().y).fg ~= doorItemId do
+            place(doorItemId,0,0)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(2000)
+        setting.editDoor(settingDoorId)
+    else
+        while getTile(getBot().x,getBot().y + 1).fg ~= 202 do
+            place(202,0,1)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x+1,getBot().y + 2).fg ~= 2 do
+            place(2,1,2)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x-1,getBot().y + 2).fg ~= 2 do
+            place(2,-1,2)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(500)
+        while getTile(getBot().x,getBot().y).fg ~= doorItemId do
+            place(doorItemId,0,0)
+            sleep(delayplace)
+            setting.reconnect(info,"")
+        end
+        sleep(2000)
+        setting.editDoor(settingDoorId)
+    end
+end
+
+if Information == "Script Auto find world made by Caramoy's Syndicate, Link Discord : https://discord.com/invite/fTTKW8vvuq" then
+    if useJammer then
+        while findItem(226) == 0 or findItem(202) == 0 or findItem(2) == 0 or findItem(doorItemId) == 0 do
+            setting.takeingre()
+            sleep(3000)
+        end
+    else
+        while findItem(202) == 0 or findItem(2) == 0 or findItem(doorItemId) == 0 do
+            setting.takeingre()
+            sleep(3000)
+        end
+    end
+    for i = 1, maxFindWorld do
+        setting.genworld()
+    end
+    print("["..indexbot.."] Sucessfully finding "..maxFindWorld.." Worlds, terminated script")
+else
+    print("Dont change Information script Idiot")
+end
